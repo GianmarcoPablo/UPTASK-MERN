@@ -48,13 +48,78 @@ const autenticar = async (req, res) => {
     }
 }
 
-const confirmar = (req, res) => {
+const confirmar = async (req, res) => {
     const { token } = req.params
-    console.log(token);
+    const usuarioConfirmar = await Usuario.findOne({ token })
+    if (!usuarioConfirmar) {
+        const error = new Error("Token no valido")
+        return res.status(404).json({ msg: error.message })
+    }
+    try {
+        usuarioConfirmar.confirmado = true
+        usuarioConfirmar.token = ""
+        await usuarioConfirmar.save()
+        res.status(201).json({ msg: "Usuario confirmado correctamente" })
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+const olvidePassword = async (req, res) => {
+    const { email } = req.body
+    const usuario = await Usuario.findOne({ email })
+    if (!usuario) {
+        const error = new Error("El usuario no existe")
+        return res.status(404).json({ msg: error.message })
+    }
+    try {
+        usuario.token = generarID()
+        await usuario.save()
+        res.json({ msg: "Hemos enviado un email con las instrucciones" })
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+const comprobarToken = async (req, res) => {
+    const { token } = req.params
+    const tokenValido = await Usuario.findOne({ token })
+    if (!tokenValido) {
+        const error = new Error("Token no valido")
+        return res.status(404).json({ msg: error.message })
+    }
+    res.json({ msg: "Token valido y el Usuario existe" })
+}
+
+const nuevoPassword = async (req, res) => {
+    const { password } = req.body
+    const { token } = req.params
+    const usuario = await Usuario.findOne({ token })
+    if (!usuario) {
+        const error = new Error("Token no valido")
+        return res.status(404).json({ msg: error.message })
+    }
+    try {
+        usuario.password = password
+        usuario.token = ""
+        await usuario.save()
+        res.json({ msg: "Password Modificado correctamente" })
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+const perfil = async (req, res) => {
+    const { usuario } = req
+    res.json(usuario)
 }
 
 export {
     registrar,
     autenticar,
-    confirmar
+    confirmar,
+    olvidePassword,
+    comprobarToken,
+    nuevoPassword,
+    perfil
 }
