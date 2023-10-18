@@ -1,6 +1,7 @@
 import Usuario from "../models/Usuario.js"
 import generarID from "../helpers/generarID.js"
 import generarJWT from "../helpers/generarJWT.js"
+import { emailRegistro, emailOlvidePassword } from "../helpers/email.js"
 
 const registrar = async (req, res) => {
     const { email } = req.body
@@ -12,8 +13,14 @@ const registrar = async (req, res) => {
     try {
         const objUsuario = new Usuario(req.body)
         objUsuario.token = generarID()
-        const usuarioAlmacenado = await objUsuario.save()
-        res.json(usuarioAlmacenado)
+        await objUsuario.save()
+        //Enviar el email de confimracion
+        emailRegistro({
+            email: objUsuario.email,
+            nombre: objUsuario.nombre,
+            token: objUsuario.token
+        })
+        res.json({ msg: "Usuario Creado Correctamente, Revisa tu Email para confirmar tu cuenta" })
     } catch (error) {
         console.log(error);
     }
@@ -56,8 +63,8 @@ const confirmar = async (req, res) => {
         return res.status(404).json({ msg: error.message })
     }
     try {
-        usuarioConfirmar.confirmado = true
         usuarioConfirmar.token = ""
+        usuarioConfirmar.confirmado = true
         await usuarioConfirmar.save()
         res.status(201).json({ msg: "Usuario confirmado correctamente" })
     } catch (error) {
@@ -75,6 +82,11 @@ const olvidePassword = async (req, res) => {
     try {
         usuario.token = generarID()
         await usuario.save()
+        emailOlvidePassword({
+            nombre: usuario.nombre,
+            email: usuario.email,
+            token: usuario.token
+        })
         res.json({ msg: "Hemos enviado un email con las instrucciones" })
     } catch (error) {
         console.log(error);

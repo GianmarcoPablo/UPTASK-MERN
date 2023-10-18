@@ -1,4 +1,5 @@
 import Proyecto from "../models/Proyecto.js"
+import Tarea from "../models/Tarea.js"
 
 const obtenerProyectos = async (req, res) => {
     //Que cada usuario pueda obtener solo loso proyectos que ellos crearon
@@ -18,7 +19,12 @@ const obtenerProyecto = async (req, res) => {
         const error = new Error("Accion no valida")
         return res.status(401).json({ msg: error.message })
     }
-    res.json(proyecto)
+    //obtener las tareas del proyecto
+    const tareas = await Tarea.find().where("proyecto").equals(id)
+    res.json({
+        proyecto,
+        tareas
+    })
 }
 
 const nuevoProyecto = async (req, res) => {
@@ -83,9 +89,6 @@ const eliminarColaborador = (req, res) => {
 
 }
 
-const obtenerTareas = (req, res) => {
-
-}
 
 export {
     obtenerProyectos,
@@ -95,5 +98,4 @@ export {
     eliminarProyecto,
     agregarColaborador,
     eliminarColaborador,
-    obtenerTareas
 }
