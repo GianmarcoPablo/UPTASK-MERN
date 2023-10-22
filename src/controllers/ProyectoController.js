@@ -3,22 +3,29 @@ import Usuario from "../models/Usuario.js"
 
 const obtenerProyectos = async (req, res) => {
     //Que cada usuario pueda obtener solo loso proyectos que ellos crearon
-    const proyectos = await Proyecto.find().where("creador").equals(req.usuario).select("-tareas")
+    const proyectos = await Proyecto.find({
+        $or: [
+            { creador: { $in: req.usuario } },
+            { colaboradores: { $in: req.usuario } }
+        ]
+    }).select("-tareas")
     res.json(proyectos)
 }
 
 const obtenerProyecto = async (req, res) => {
     const { id } = req.params
-    const proyecto = await Proyecto.findById(id).populate("tareas").populate("colaboradores", "nombre email")
+    const proyecto = await Proyecto.findById(id).populate({ path: "tareas", populate: { path: "completado", select: "nombre" } }).populate("colaboradores", "nombre email")
     if (!proyecto) {
         const error = new Error("No encontrado")
         return res.status(404).json({ msg: error.message })
     }
     //Que el usuario authenticado puede encontrar solo el proyecto  que el creo
-    if (proyecto.creador.toString() !== req.usuario._id.toString()) {
+    if (proyecto.creador.toString() !== req.usuario._id.toString() && !proyecto.colaboradores.some(colaborador => colaborador._id.toString() === req.usuario._id.toString())) {
         const error = new Error("Accion no valida")
         return res.status(401).json({ msg: error.message })
     }
+
+
     //obtener las tareas del proyecto
     res.json(proyecto)
 }
